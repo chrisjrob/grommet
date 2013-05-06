@@ -2,6 +2,8 @@
 // by chrisjrob
 
 // Global Parameters
+print_cap = 0;                // 1 if you want to print the cap
+print_grommet = 1;            // 1 if you want to print the grommet
 grommet_hole_diameter = 80;   // Size of the hole
 grommet_depth = 12.75;        // Thickness of dry-lining, desk or whatever
 cable_hole_diameter = 20;     // Size of the small hole through which the cables travel
@@ -10,8 +12,9 @@ cap_overlap = 7.5;            // How much overlap you would like around the hole
 cap_thickness = 1;            // How thick you would like the front or top of the grommet
 bottom_overlap = 3;           // How much you want the clips to overlap the hole
 bottom_overlap_angle = 60;    // Angle of clip - you may not be able to print much more than 45
-number_of_clips = 4;          // 0 if you can rely on gravity, 2 for a wall or 4 for ceiling?
-spacing = 0.4;                // Gap you want between the barrel of the cap and the barrel of the grommet
+number_of_clips = 2;          // 0 if you can rely on gravity, 2 for a wall or 4 for ceiling?
+spacing = 0.4;                // Spacing between otherwise touching parts
+interlock_span = 0.7;         // Interlock span - the size of the interlocking clips
 
 module cap() {
 
@@ -25,7 +28,7 @@ module cap() {
 
             // Barrel of cap
             rotate_extrude($fn=200)
-                translate([grommet_hole_diameter/2 - thickness - spacing,cap_thickness,0])
+                translate([grommet_hole_diameter/2 - thickness - interlock_span - spacing,cap_thickness,0])
                     polygon(points = [ [-thickness,0], [-thickness,grommet_depth], [0,grommet_depth], [0,0] ], paths = [ [0,1,2,3,0] ]);
 
             // Barrel of the cable hole
@@ -35,9 +38,21 @@ module cap() {
 
             // The sides between the cable hole and the barrel of cap
             translate([cable_hole_diameter/2,-thickness,cap_thickness])
-                cube([grommet_hole_diameter/2 - cable_hole_diameter/2 -thickness - spacing,thickness * 2,grommet_depth]);
-            translate([-grommet_hole_diameter/2 +thickness + spacing,-thickness,cap_thickness])
-                cube([grommet_hole_diameter/2 - cable_hole_diameter/2 -thickness - spacing,thickness * 2,grommet_depth]);
+                cube([grommet_hole_diameter/2 - cable_hole_diameter/2 -thickness - interlock_span - spacing,thickness * 2,grommet_depth]);
+            translate([-grommet_hole_diameter/2 +thickness + interlock_span + spacing,-thickness,cap_thickness])
+                cube([grommet_hole_diameter/2 - cable_hole_diameter/2 -thickness - interlock_span - spacing,thickness * 2,grommet_depth]);
+
+            // Nodules for clipping into the barrel of the grommet 
+            for (i = [0:4]) {
+                    for (j = [0:30]) {
+                        rotate([0,0,i*360/4 -59 +j]) {
+                            translate([-grommet_hole_diameter/2 +thickness +spacing, 0, grommet_depth + cap_thickness -thickness*3]) {
+                                cube(size = [interlock_span,thickness,thickness]);
+                            }
+                        }
+                    }
+            }
+
         }
 
         // Things that don't exist
@@ -45,7 +60,7 @@ module cap() {
 
             // The dividing cap between each side of the cap
             translate([-grommet_hole_diameter/2 - cap_overlap/2,-spacing/2,0])
-                cube([grommet_hole_diameter +cap_overlap,spacing,grommet_depth + cap_thickness]);
+                cube([grommet_hole_diameter +cap_overlap, spacing, grommet_depth + cap_thickness]);
 
             // The hole for the cable in the cap
             cylinder(h = cap_thickness, r = cable_hole_diameter/2, $fn=200);
@@ -65,9 +80,22 @@ module grommet() {
             // The overlapping front plate
             cylinder(h = cap_thickness, r = grommet_hole_diameter/2 + cap_overlap, $fn=200);
 
+            // The barrel and clip
             rotate_extrude($fn=200)
                 translate([grommet_hole_diameter/2 - thickness,cap_thickness,0])
                     polygon(points = [ [0,0], [0,grommet_depth + thickness], [bottom_overlap,grommet_depth + thickness + bottom_overlap * (2-bottom_overlap_angle/45)], [-thickness,grommet_depth * 2], [0,grommet_depth * 2], [bottom_overlap + thickness,grommet_depth + bottom_overlap * (2-bottom_overlap_angle/45)], [thickness,grommet_depth], [thickness,0] ], paths = [ [0,1,2,3,4,5,6,7,0,1] ]);
+
+            // Nodules for clipping into the barrel of the grommet 
+            for (i = [0:4]) {
+                    for (j = [0:30]) {
+                        rotate([0,0,i*360/4 -14 +j]) {
+                            translate([-grommet_hole_diameter/2 +thickness,0, grommet_depth + cap_thickness -thickness*5 -spacing]) {
+                                cube(size = [interlock_span,thickness,thickness]);
+                            }
+                        }
+                    }
+            }
+
         }
 
         // Things to be cut out
@@ -124,15 +152,28 @@ module grommet() {
             }
 
             // Remove centre of cap
-            cylinder(h = cap_thickness, r = grommet_hole_diameter/2 - thickness, $fn=100);
+            cylinder(h = cap_thickness, r = grommet_hole_diameter/2 - thickness - spacing, $fn=100);
 
         }
     }
 
 }
 
-translate(v = [grommet_hole_diameter/-2 - cap_overlap - 5, 0, 0])
+if (print_cap == 1) and (print_grommet == 1) {
+
+    //translate(v = [0,0,cap_thickness])
+    translate(v = [grommet_hole_diameter/-2 - cap_overlap - 5, 0, 0])
+        grommet();
+
+    //translate(v = [0,0,0])
+    //    rotate([0,0,-45])
+    translate(v = [grommet_hole_diameter/2 + cap_overlap + 5, 0, 0])
+        cap();
+
+} else if (print_cap == 1) {
+    cap();
+
+} else if (print_grommet == 1) {
     grommet();
 
-translate(v = [grommet_hole_diameter/2 + cap_overlap + 5, 0, 0])
-    cap();
+}
