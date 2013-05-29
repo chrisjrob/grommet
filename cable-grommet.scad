@@ -1,5 +1,7 @@
+// cable-grommet.scad
 // Cable Grommet for Desk or Dry-lining
-// by chrisjrob
+// 
+// Copyright 2013 Christopher Roberts
 
 // Global Parameters
 print_cap             = 1;     // 1 if you want to print the cap
